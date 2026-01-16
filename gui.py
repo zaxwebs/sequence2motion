@@ -21,32 +21,91 @@ class AVIFConverterGUI:
 
         self.create_widgets()
 
+    class ToolTip(object):
+        def __init__(self, widget, text='widget info'):
+            self.wait_time = 500
+            self.wrap_length = 180
+            self.widget = widget
+            self.text = text
+            self.widget.bind("<Enter>", self.enter)
+            self.widget.bind("<Leave>", self.leave)
+            self.widget.bind("<ButtonPress>", self.leave)
+            self.id = None
+            self.tw = None
+
+        def enter(self, event=None):
+            self.schedule()
+
+        def leave(self, event=None):
+            self.unschedule()
+            self.hidetip()
+
+        def schedule(self):
+            self.unschedule()
+            self.id = self.widget.after(self.wait_time, self.showtip)
+
+        def unschedule(self):
+            id = self.id
+            self.id = None
+            if id:
+                self.widget.after_cancel(id)
+
+        def showtip(self, event=None):
+            x = y = 0
+            x, y, cx, cy = self.widget.bbox("insert")
+            x += self.widget.winfo_rootx() + 25
+            y += self.widget.winfo_rooty() + 20
+            self.tw = tk.Toplevel(self.widget)
+            self.tw.wm_overrideredirect(True)
+            self.tw.wm_geometry("+%d+%d" % (x, y))
+            label = tk.Label(self.tw, text=self.text, justify='left',
+                           background="#ffffe0", relief='solid', borderwidth=1,
+                           wraplength = self.wrap_length)
+            label.pack(ipadx=1)
+
+        def hidetip(self):
+            tw = self.tw
+            self.tw= None
+            if tw:
+                tw.destroy()
+
     def create_widgets(self):
-        # Input Folder
-        tk.Label(self.root, text="Input Folder (PNG Sequence):").pack(pady=5, anchor="w", padx=10)
-        input_frame = tk.Frame(self.root)
-        input_frame.pack(fill="x", padx=10)
+        # Input Section
+        input_group = tk.LabelFrame(self.root, text="Input", padx=10, pady=10)
+        input_group.pack(fill="x", padx=10, pady=5)
+        
+        tk.Label(input_group, text="Folder (PNG Sequence):").pack(anchor="w")
+        input_frame = tk.Frame(input_group)
+        input_frame.pack(fill="x", pady=5)
+        
         tk.Entry(input_frame, textvariable=self.input_folder, state="readonly").pack(side="left", fill="x", expand=True)
         tk.Button(input_frame, text="Browse", command=self.browse_input).pack(side="right", padx=5)
 
-        # Shared Settings Frame
-        shared_frame = tk.Frame(self.root)
-        shared_frame.pack(pady=5, padx=10, fill="x")
+        # Settings Section
+        settings_group = tk.LabelFrame(self.root, text="Settings", padx=10, pady=10)
+        settings_group.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # FPS (Shared)
+        # Shared Settings
+        shared_frame = tk.Frame(settings_group)
+        shared_frame.pack(fill="x", pady=5)
+        
+        # FPS
         tk.Label(shared_frame, text="FPS:").grid(row=0, column=0, sticky="w", padx=5)
-        tk.Scale(shared_frame, from_=1, to=120, orient="horizontal", variable=self.fps).grid(row=0, column=1, sticky="we", padx=5)
+        fps_scale = tk.Scale(shared_frame, from_=1, to=120, orient="horizontal", variable=self.fps)
+        fps_scale.grid(row=0, column=1, sticky="we", padx=5)
+        self.ToolTip(fps_scale, "Frames per second for video/animation.")
 
-        # Width (Shared)
+        # Width
         tk.Label(shared_frame, text="Width (px):").grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.width_scale = tk.Scale(shared_frame, from_=1, to=100, orient="horizontal", variable=self.width, state="disabled")
         self.width_scale.grid(row=1, column=1, sticky="we", padx=5, pady=5)
+        self.ToolTip(self.width_scale, "Width of the output. Disabled until input folder is selected.")
         
         shared_frame.columnconfigure(1, weight=1)
 
-        # Tabs for Export Settings
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(pady=10, padx=10, fill="both", expand=True)
+        # Tabs
+        self.notebook = ttk.Notebook(settings_group)
+        self.notebook.pack(pady=10, fill="both", expand=True)
 
         # Create Tab Frames
         self.avif_tab = tk.Frame(self.notebook)
@@ -61,27 +120,36 @@ class AVIFConverterGUI:
         self.notebook.add(self.gif_tab, text="GIF")
         self.notebook.add(self.png_tab, text="APNG")
         
-        # Populate Tabs (only format specific settings now)
+        # Populate Tabs
         self.create_avif_settings(self.avif_tab)
-        # WebM, Safari, GIF and APNG tabs are empty/informational for now as settings are shared
-        tk.Label(self.webm_tab, text="Settings are shared above (VP9).").pack(pady=20)
-        tk.Label(self.safari_tab, text="Settings are shared above (HEVC + Alpha).").pack(pady=20)
-        tk.Label(self.gif_tab, text="Settings are shared above.").pack(pady=20)
-        tk.Label(self.png_tab, text="Settings are shared above.").pack(pady=20)
+        tk.Label(self.webm_tab, text="Use Shared Settings (VP9).\nQuality slider maps to CRF.").pack(pady=20)
+        tk.Label(self.safari_tab, text="Use Shared Settings (HEVC + Alpha).\nQuality slider maps to CRF.").pack(pady=20)
+        tk.Label(self.gif_tab, text="Use Shared Settings.").pack(pady=20)
+        tk.Label(self.png_tab, text="Use Shared Settings.").pack(pady=20)
 
-        # Bind tab change event
+        # Bind tab change
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
 
-        # Output File (moved to bottom)
-        tk.Label(self.root, text="Output File:").pack(pady=5, anchor="w", padx=10)
-        output_frame = tk.Frame(self.root)
-        output_frame.pack(fill="x", padx=10)
-        tk.Entry(output_frame, textvariable=self.output_file, state="readonly").pack(side="left", fill="x", expand=True)
-        tk.Button(output_frame, text="Browse", command=self.browse_output).pack(side="right", padx=5)
+        # Output Section
+        output_group = tk.LabelFrame(self.root, text="Output", padx=10, pady=10)
+        output_group.pack(fill="x", padx=10, pady=5)
 
-        # Convert Button
-        self.convert_btn = tk.Button(self.root, text="Convert", command=self.start_conversion, height=2, bg="#4CAF50", fg="white", font=("Arial", 12, "bold"))
-        self.convert_btn.pack(pady=10, fill="x", padx=20)
+        tk.Label(output_group, text="Destination File:").pack(anchor="w")
+        output_frame_inner = tk.Frame(output_group)
+        output_frame_inner.pack(fill="x", pady=5)
+        
+        tk.Entry(output_frame_inner, textvariable=self.output_file, state="readonly").pack(side="left", fill="x", expand=True)
+        tk.Button(output_frame_inner, text="Browse", command=self.browse_output).pack(side="right", padx=5)
+
+        # Actions
+        action_frame = tk.Frame(self.root)
+        action_frame.pack(fill="x", padx=20, pady=10)
+
+        self.convert_btn = tk.Button(action_frame, text="Convert", command=self.start_conversion, height=2, bg="#4CAF50", fg="white", font=("Arial", 12, "bold"))
+        self.convert_btn.pack(side="left", fill="x", expand=True)
+        
+        self.open_btn = tk.Button(action_frame, text="Open Folder", command=self.open_output_folder, state="disabled", height=2)
+        self.open_btn.pack(side="right", padx=(10, 0))
 
         # Status
         tk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w").pack(side="bottom", fill="x")
@@ -92,21 +160,38 @@ class AVIFConverterGUI:
         
         # Quality
         tk.Label(frame, text="Quality (0-100):").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        tk.Scale(frame, from_=0, to=100, orient="horizontal", variable=self.quality).grid(row=0, column=1, sticky="we", padx=5, pady=5)
+        q_scale = tk.Scale(frame, from_=0, to=100, orient="horizontal", variable=self.quality)
+        q_scale.grid(row=0, column=1, sticky="we", padx=5, pady=5)
+        self.ToolTip(q_scale, "0=Low, 100=High. For WebM/Safari, this maps to CRF.")
         
         frame.columnconfigure(1, weight=1)
 
-    def create_webm_settings(self, parent):
-        pass
-        
-    def create_safari_settings(self, parent):
-        pass
+    # ... (other create_*_settings methods remain empty/pass) ...
 
-    def create_gif_settings(self, parent):
-        pass
+    def open_output_folder(self):
+        output_file = self.output_file.get()
+        if output_file and os.path.exists(output_file):
+             folder = os.path.dirname(output_file)
+             os.startfile(folder)
+        elif output_file:
+             # Try opening folder even if file doesn't exist yet (unlikely here but safety)
+             folder = os.path.dirname(output_file)
+             if os.path.exists(folder):
+                 os.startfile(folder)
 
-    def create_png_settings(self, parent):
-        pass
+    # ... (rest of methods) ...
+
+    def conversion_success(self):
+        self.status_var.set("Conversion Complete!")
+        self.convert_btn.config(state="normal", text="Convert")
+        self.open_btn.config(state="normal") # Enable open button
+        messagebox.showinfo("Success", "Conversion completed successfully!")
+
+    def conversion_error(self, message):
+        self.status_var.set("Error occurred")
+        self.convert_btn.config(state="normal", text="Convert")
+        messagebox.showerror("Error", message)
+
 
     def browse_input(self):
         folder = filedialog.askdirectory()
@@ -254,6 +339,7 @@ class AVIFConverterGUI:
     def conversion_success(self):
         self.status_var.set("Conversion Complete!")
         self.convert_btn.config(state="normal", text="Convert")
+        self.open_btn.config(state="normal") # Enable open button
         messagebox.showinfo("Success", "Conversion completed successfully!")
 
     def conversion_error(self, message):
