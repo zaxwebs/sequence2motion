@@ -131,7 +131,7 @@ def convert_images(input_folder, output_file, fps=24, quality=85, width=None, pr
             first_image.save(output_file, **save_kwargs)
         
         print("Conversion complete!")
-        return True
+        return os.path.getsize(output_file)
 
     except Exception as e:
         print(f"Error during conversion: {e}")
@@ -153,6 +153,8 @@ def main():
     success = convert_images(args.input_folder, args.output_file, args.fps, args.quality, width=args.width)
     if not success:
         sys.exit(1)
+    
+    print(f"File size: {success} bytes")
 
 if __name__ == "__main__":
     main()

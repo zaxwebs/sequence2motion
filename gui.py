@@ -9,7 +9,8 @@ class AVIFConverterGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("PNG Sequence Converter")
-        self.root.geometry("500x550")
+        self.root.geometry("500x600")
+        self.root.minsize(500, 600)
 
         # Variables
         self.input_folder = tk.StringVar()
@@ -320,7 +321,7 @@ class AVIFConverterGUI:
             else:
                 width = None
 
-            success = convert_images(
+            result = convert_images(
                 input_folder, 
                 output_file, 
                 fps, 
@@ -329,18 +330,27 @@ class AVIFConverterGUI:
                 progress_callback=self.update_progress
             )
             
-            if success:
-                self.root.after(0, self.conversion_success)
+            if result:
+                self.root.after(0, lambda: self.conversion_success(result))
             else:
                 self.root.after(0, lambda: self.conversion_error("Conversion failed. Check console for details."))
         except Exception as e:
             self.root.after(0, lambda: self.conversion_error(str(e)))
 
-    def conversion_success(self):
-        self.status_var.set("Conversion Complete!")
+    def conversion_success(self, size_bytes):
+        # Format size
+        if size_bytes < 1024:
+            size_str = f"{size_bytes} bytes"
+        elif size_bytes < 1024 * 1024:
+            size_str = f"{size_bytes/1024:.1f} KB"
+        else:
+            size_str = f"{size_bytes/(1024*1024):.1f} MB"
+
+        msg = f"Conversion Complete! Size: {size_str}"
+        self.status_var.set(msg)
         self.convert_btn.config(state="normal", text="Convert")
         self.open_btn.config(state="normal") # Enable open button
-        messagebox.showinfo("Success", "Conversion completed successfully!")
+        messagebox.showinfo("Success", f"Conversion completed successfully!\nFile Size: {size_str}")
 
     def conversion_error(self, message):
         self.status_var.set("Error occurred")
