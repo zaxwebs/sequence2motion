@@ -117,14 +117,14 @@ class AVIFConverterGUI:
 
         self.notebook.add(self.avif_tab, text="AVIF")
         self.notebook.add(self.webm_tab, text="WebM")
-        self.notebook.add(self.safari_tab, text="Safari (HEVC)")
+        self.notebook.add(self.safari_tab, text="Safari (ProRes)")
         self.notebook.add(self.gif_tab, text="GIF")
         self.notebook.add(self.png_tab, text="APNG")
         
         # Populate Tabs
         self.create_avif_settings(self.avif_tab)
         tk.Label(self.webm_tab, text="Use Shared Settings (VP9).\nQuality slider maps to CRF.").pack(pady=20)
-        tk.Label(self.safari_tab, text="Use Shared Settings (HEVC + Alpha).\nQuality slider maps to CRF.").pack(pady=20)
+        tk.Label(self.safari_tab, text="Use Shared Settings (ProRes 4444).\nBest for transparency in Safari.").pack(pady=20)
         tk.Label(self.gif_tab, text="Use Shared Settings.").pack(pady=20)
         tk.Label(self.png_tab, text="Use Shared Settings.").pack(pady=20)
 

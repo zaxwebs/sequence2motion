@@ -96,9 +96,9 @@ def convert_images(input_folder, output_file, fps=24, quality=85, width=None, pr
              writer = imageio.get_writer(
                 output_file, 
                 fps=fps, 
-                codec='libx265', 
-                pixelformat='yuva420p',
-                ffmpeg_params=['-tag:v', 'hvc1', '-x265-params', 'alpha=1']
+                codec='prores_ks', 
+                pixelformat='yuva444p10le',
+                ffmpeg_params=['-alpha_bits', '16', '-profile:v', '4444']
              )
              for img in images:
                  writer.append_data(np.array(img))
