@@ -125,7 +125,8 @@ def convert_images(input_folder, output_file, fps=24, quality=85, width=None, pr
                  save_kwargs["optimize"] = True
             elif format_name == "PNG":
                  save_kwargs["format"] = "PNG"
-                 save_kwargs["blend"] = 1
+                 save_kwargs["blend"] = 0
+                 save_kwargs["disposal"] = 1
 
             first_image.save(output_file, **save_kwargs)
         
