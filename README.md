@@ -49,7 +49,8 @@ python gui.py
 
 ## Known Issues
 
-- **Safari (HEVC) Alpha Channel**: While the exporter produces valid HEVC files with an alpha channel (using `hvc1` tags), **Safari currently does not render the transparency correctly in the browser**. The video plays, but the background may appear black or opaque. This is a known limitation currently being investigated.
+- **Safari (HEVC) Alpha Channel**
+- **Safari AVIF Alpha Channel**
 
 ## Requirements
 
